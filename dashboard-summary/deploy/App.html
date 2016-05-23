@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>intel-dashboard-summary</title>
+
+    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                var QueryString=function(){for(var query_string={},query=window.location.search.substring(1),vars=query.split("&"),i=0;vars.length>i;i++){var pair=vars[i].split("=");if(query_string[pair[0]]===void 0)query_string[pair[0]]=decodeURIComponent(pair[1]);else if("string"==typeof query_string[pair[0]]){var arr=[query_string[pair[0]],decodeURIComponent(pair[1])];query_string[pair[0]]=arr}else query_string[pair[0]].push(decodeURIComponent(pair[1]))}return query_string}();Ext.define("CustomApp",{extend:"Rally.app.App",componentCls:"app",items:[{id:"panel",xtype:"container",margin:"5 5 5 5",items:[{id:"summaryPie",xtype:"container",margin:"5 5 5 5",frame:!1},{id:"summaryGrid",xtype:"container",margin:"5 5 5 5",frame:!1},{xtype:"panel",frame:!1,margin:"5 5 5 5",items:[{xtype:"textfield",margin:"5 5 5 5",fieldLabel:"Search",id:"searchText"},{margin:"5 5 5 5",xtype:"container",id:"searchGrid"}]}]}],fields:[{displayName:"Subscription",name:"sub"},{displayName:"Enabled",name:"enabled"},{displayName:"LoggedIn90",name:"loggedIn90"}],loadFromStorage:function(keys){var data=_.map(keys,function(key){var ls=localStorage.getItem(key);return _.isUndefined(ls)||_.isNull(ls)?null:JSON.parse(ls)});return data},loggedIn90:function(user){if(_.isNull(user.LastLoginDate))return!1;var dt=Rally.util.DateTime.getDifference(new Date,new Date(user.LastLoginDate),"day");return 90>=dt},summarizeData:function(records){var that=this;return{total:records.length,enabled:_.filter(records,function(r){return r.Disabled===!1}).length,disabled:_.filter(records,function(r){return r.Disabled===!0}).length,loggedIn90:_.filter(records,function(r){return that.loggedIn90(r)}).length}},showInGrid:function(data){var that=this,storeData=_.map(data,function(d){var summary=that.summarizeData(d.records);return summary.sub=d.sub,summary});that.fields.push({name:"PctEnabled",type:"number",displayName:"% of Enabled",convert:function(val,row){var x=row.get("enabled")>0?100*(row.get("loggedIn90")/row.get("enabled")):0;return Math.round(x)}}),that.store=Ext.create("Ext.data.JsonStore",{fields:that.fields,data:storeData});var cols=_.map(that.fields,function(f){return{text:f.displayName,dataIndex:f.name}});cols[0].width=200,cols[1].summaryType="sum",cols[2].summaryType="sum";var grid=new Ext.grid.GridPanel({store:that.store,columns:cols,width:550,features:[{ftype:"grouping",showSummaryRow:!0,groupHeaderTpl:" {name}"},{ftype:"summary"}]});Ext.getCmp("summaryGrid").add(grid)},searchGrid:function(data){var that=this,searchStoreData=_.flatten(_.map(data,function(d){return _.map(d.records,function(r){return{subscription:d.sub,user:r.UserName}})}));console.log("searchStoreData",searchStoreData);var fields=[{name:"user"},{name:"subscription"}];that.searchStore=Ext.create("Ext.data.JsonStore",{fields:fields,data:searchStoreData});var searchGrid=new Ext.grid.GridPanel({store:that.searchStore,columns:[{text:"UserName",dataIndex:"user",width:250,autoSizeColumn:!0},{text:"Subscription",dataIndex:"subscription",width:250,autoSizeColumn:!0}],width:550,height:300});Ext.getCmp("searchGrid").add(searchGrid)},createChart:function(){var that=this;chart=new Ext.chart.Chart({width:550,height:170,animate:!0,store:that.store,legend:{position:"right"},insetPadding:25,theme:"Base:gradients",series:[{label:{field:"sub"},type:"pie",field:"enabled",showInLegend:!0,highlight:{segment:{margin:20}},animate:!0}]}),Ext.getCmp("summaryPie").add(chart)},launch:function(){var that=this;console.log(QueryString.apiKeys),Ext.getCmp("panel").setTitle("All Subscriptions");var keyString=QueryString.apiKeys,keys=keyString.split(","),data=this.loadFromStorage(keys);console.log("data",data),this.showInGrid(data),this.searchGrid(data),this.createChart(),Ext.getCmp("searchText").addListener("change",function(obj,newValue,oldValue,opts){that.searchStore.clearFilter(!0),that.searchStore.filterBy(function(record){return-1!==record.get("user").toLowerCase().indexOf(newValue.toLowerCase())})})}});
+
+            Rally.launchApp('CustomApp', {
+                name:"intel-dashboard-summary",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        
+    </style>
+</head>
+<body>
+</body>
+</html>
